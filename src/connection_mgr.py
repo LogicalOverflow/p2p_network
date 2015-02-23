@@ -12,9 +12,10 @@ def acceptor(s, conn_mgr):
 
 def receiver(conn, conn_mgr):
 
-    connection_callback = getattr(conn_mgr, 'connection_callback', None)
-    forward_callback = getattr(conn_mgr, 'forward_callback', None)
-    new_message_callback = getattr(conn_mgr, 'new_message_callback', None)
+    connection_callback = getattr(conn_mgr, 'connection_internal_callback', None)
+    new_message_callback = getattr(conn_mgr, 'new_message_internal_callback', None)
+    forward_callback = getattr(conn_mgr, 'forward_internal_callback', None)
+    disconnect_callback = getattr(conn_mgr, 'disconnect_internal_callback', None)
     client_id_len = len(conn_mgr.CLIENT_ID)
     connected_id = bytearray(0)
 
@@ -48,6 +49,8 @@ def receiver(conn, conn_mgr):
                 conn_mgr.SEND_Q.put((msg, sender_id, receiver_id))
                 if callable(new_message_callback):
                     forward_callback(sender_id, receiver_id, msg)
+
+    disconnect_callback(connected_id)
 
 
 def msg_sender(conn_mgr):
@@ -100,18 +103,35 @@ class ConnectionMgr():
         self.sender_process = mp.Process(target=msg_sender, args=(self, ))
         self.sender_process.start()
 
+    def connection_internal_callback(self, connected_id, connection):
+        return self.connection_callback(connected_id, connection)
+
     def connection_callback(self, connected_id, connection):
-        self.CONNECTIONS[connected_id] = connection
-        print('> NEW ONE: ' + str(connected_id))
+        pass
+
+    def new_message_internal_callback(self, sender_id, msg):
+        return self.new_message_callback(sender_id, msg)
 
     def new_message_callback(self, sender_id, msg):
         pass
 
+    def forward_internal_callback(self, sender_id, receiver_id, msg):
+        return self.forward_callback(sender_id, receiver_id, msg)
+
     def forward_callback(self, sender_id, receiver_id, msg):
         pass
 
+    def sending_internal_callback(self, receiver_id, msg):
+        return self.sending_callback(receiver_id, msg)
+
     def sending_callback(self, receiver_id, msg):
-        print('> SENDING \'{0}\' at'.format(msg), receiver_id)
+        pass
+
+    def disconnect_internal_callback(self, receiver_id):
+        return self.disconnect_callback(receiver_id)
+
+    def disconnect_callback(self, receiver_id):
+        pass
 
     def connect(self, target_address):
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -121,5 +141,5 @@ class ConnectionMgr():
         return True
 
     def send_msg(self, receiver_id, msg):
-        self.sending_callback(receiver_id, msg)
+        self.sending_internal_callback(receiver_id, msg)
         self.SEND_Q.put((msg, self.CLIENT_ID, receiver_id))
