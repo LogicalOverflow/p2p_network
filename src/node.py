@@ -5,12 +5,6 @@ from src.connection_mgr import ConnectionMgr
 from time import sleep
 
 
-PORT = 13379
-
-START_IP = '127.0.0.1'
-CLIENT_ID = bytes([0, 0, 0, 0])
-
-
 class Node():
     def __init__(self, node_ip, node_port, client_id):
         node_address = (node_ip, node_port)
@@ -24,6 +18,7 @@ class Node():
         self.conn_mgr.new_message_callback = self.new_message_callback
         self.conn_mgr.forward_callback = self.forward_callback
         self.conn_mgr.sending_callback = self.forward_callback
+        self.conn_mgr.disconnect_callback = self.disconnect_callback
 
     def connect_to_node(self, partner_ip, partner_port):
         if not isinstance(partner_port, int):
@@ -35,14 +30,18 @@ class Node():
 
         return self.conn_mgr.connect((partner_ip, partner_port))
 
-    def new_message_callback(self, sender_id, msg):
+    def new_message_callback(self, sender_id, msg, msg_type):
+        print('<', sender_id, ':', msg)
         pass
 
-    def forward_callback(self, sender_id, receiver_id, msg):
+    def forward_callback(self, sender_id, receiver_id, msg, msg_type):
         pass
 
-    def sending_callback(self, receiver_id, msg):
+    def sending_callback(self, receiver_id, msg, msg_type):
         print('> SENDING \'{0}\' at'.format(msg), receiver_id)
+
+    def disconnect_callback(self, sending_internal_callback):
+        pass
 
     def send_msg(self, receiver_id, byte_msg):
         self.conn_mgr.send_msg(receiver_id, byte_msg)
@@ -54,9 +53,6 @@ class Node():
 def print_out(msg_q):
     while True:
         msg_data = msg_q.get(block=True)
-        sender = msg_data[0]
-        msg = msg_data[1]
-        print('<', sender, ':', msg)
 
 
 if __name__ == '__main__':
@@ -76,12 +72,10 @@ if __name__ == '__main__':
     node = Node(CLIENT_IP, CLIENT_PORT, CLIENT_ID)
     node.connect_to_node(PARTNER_IP, PARTNER_PORT)
 
-    # node.send_msg(bytes([1]), 'HELLO THERE'.encode('utf-8'))
     print_out_process = mp.Process(target=print_out, args=(node.msg_q, ))
     print_out_process.start()
 
-    sleep(5)
-    node.send_msg(bytes([1]), 'HELLO THERE'.encode('utf-8'))
+    sleep(1)
 
     print('UP AND RUNNING')
     while True:
@@ -89,3 +83,4 @@ if __name__ == '__main__':
         target_id = bytes([int(send_data[0])])
         msg_str = send_data[2:]
         node.send_msg(target_id, msg_str.encode('utf-8'))
+        print(node.conn_mgr.CONNECTION_PARTNERS)
