@@ -1,7 +1,7 @@
 import socket
 import multiprocessing as mp
 
-from src.connection_mgr import ConnectionMgr
+from connection_mgr import ConnectionMgr
 from time import sleep
 
 
@@ -15,10 +15,10 @@ class Node():
         self.msg_q = mp.Queue()
         self.conn_mgr = ConnectionMgr(s, client_id, self.msg_q)
 
-        self.conn_mgr.new_message_callback = self.new_message_callback
-        self.conn_mgr.forward_callback = self.forward_callback
-        self.conn_mgr.sending_callback = self.forward_callback
-        self.conn_mgr.disconnect_callback = self.disconnect_callback
+        # self.conn_mgr.new_message_callback = self.new_message_callback
+        # self.conn_mgr.forward_callback = self.forward_callback
+        # self.conn_mgr.sending_callback = self.forward_callback
+        # self.conn_mgr.disconnect_callback = self.disconnect_callback
 
     def connect_to_node(self, partner_ip, partner_port):
         if not isinstance(partner_port, int):

@@ -25,33 +25,33 @@ def receiver(conn, conn_mgr):
 
     connected_id = bytes(connected_id)
 
-    partners = bytearray(0)
-    for partner in conn_mgr.CONNECTIONS:
-        partners += partner
-    partners = bytes(partners + conn_mgr.SPLIT_CHAR)
-    conn.send(partners)
+    # partners = bytearray(0)
+    # for partner in conn_mgr.CONNECTIONS:
+    #    partners += partner
+    # partners = bytes(partners + conn_mgr.SPLIT_CHAR)
+    # conn.send(partners)
 
-    connected_partners = []
-    last_ids = bytearray(0)
-    while True:
-        next_partner = bytes(conn.recv(client_id_len))
-        if next_partner == conn_mgr.SPLIT_CHAR:
-            break
-        else:
-            last_ids += next_partner
-            last_ids = last_ids[:len(conn_mgr.SPLIT_CHAR)]
-            if last_ids == conn_mgr.SPLIT_CHAR:
-                break
-        connected_partners.append(next_partner)
-    del connected_partners[-len(conn_mgr.SPLIT_CHAR)//client_id_len:]
-    del last_ids
+    # connected_partners = []
+    # last_ids = bytearray(0)
+    # while True:
+    #   next_partner = bytes(conn.recv(client_id_len))
+    #   if next_partner == conn_mgr.SPLIT_CHAR:
+    #       break
+    #   else:
+    #       last_ids += next_partner
+    #       last_ids = last_ids[:len(conn_mgr.SPLIT_CHAR)]
+    #       if last_ids == conn_mgr.SPLIT_CHAR:
+    #           break
+    #   connected_partners.append(next_partner)
+    # del connected_partners[-len(conn_mgr.SPLIT_CHAR)//client_id_len:]
+    # del last_ids
 
     conn_mgr.CONNECTION_Q.put((connected_id, conn))
     if callable(connection_callback):
         connection_callback(connected_id, conn)
 
     data_stream = bytearray(0)
-    while True:
+    while True: # TODO while 'socket.is_connected'
         data_stream += conn.recv(conn_mgr.BUFFER_SIZE)
         if conn_mgr.SPLIT_CHAR in data_stream:
             ind = data_stream.index(conn_mgr.SPLIT_CHAR)
@@ -65,7 +65,8 @@ def receiver(conn, conn_mgr):
 
             if receiver_id == conn_mgr.CLIENT_ID or receiver_id == conn_mgr.BROADCAST_ID:
                 if msg_type == conn_mgr.MSG_TYPES['new_buddy']:
-                    connected_partners.append(msg)
+                    # connected_partners.append(msg)
+                    pass
                 else:
                     conn_mgr.MSG_Q.put((sender_id, msg, msg_type))
                     if callable(new_message_callback):
@@ -75,7 +76,7 @@ def receiver(conn, conn_mgr):
                 if callable(new_message_callback):
                     forward_callback(sender_id, receiver_id, msg, msg_type)
 
-    disconnect_callback(connected_id)
+    # disconnect_callback(connected_id)
 
 
 def msg_sender(conn_mgr):
