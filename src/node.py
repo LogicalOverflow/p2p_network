@@ -50,9 +50,9 @@ class Node():
         self.conn_mgr.send_msg(bytes(1), broadcast)
 
 
-def print_out(msg_q):
+def q_cleaner(q):
     while True:
-        msg_data = msg_q.get(block=True)
+        q.get(block=True)
 
 
 if __name__ == '__main__':
@@ -72,8 +72,8 @@ if __name__ == '__main__':
     node = Node(CLIENT_IP, CLIENT_PORT, CLIENT_ID)
     node.connect_to_node(PARTNER_IP, PARTNER_PORT)
 
-    print_out_process = mp.Process(target=print_out, args=(node.msg_q, ))
-    print_out_process.start()
+    q_cleaner_process = mp.Process(target=q_cleaner, args=(node.msg_q, ))
+    q_cleaner_process.start()
 
     sleep(1)
 

@@ -16,6 +16,7 @@ def receiver(conn, conn_mgr):
     new_message_callback = getattr(conn_mgr, 'new_message_internal_callback', None)
     forward_callback = getattr(conn_mgr, 'forward_internal_callback', None)
     disconnect_callback = getattr(conn_mgr, 'disconnect_internal_callback', None)
+
     client_id_len = len(conn_mgr.CLIENT_ID)
     connected_id = bytearray(0)
 
@@ -51,8 +52,15 @@ def receiver(conn, conn_mgr):
         connection_callback(connected_id, conn)
 
     data_stream = bytearray(0)
-    while True: # TODO while 'socket.is_connected'
-        data_stream += conn.recv(conn_mgr.BUFFER_SIZE)
+    while True:
+        try:
+            new_data = conn.recv(conn_mgr.BUFFER_SIZE)
+            if new_data:
+                data_stream += new_data
+            else:
+                break  # TODO IS THIS WORKING?! -> TEST THIS
+        except socket.timeout:
+            break
         if conn_mgr.SPLIT_CHAR in data_stream:
             ind = data_stream.index(conn_mgr.SPLIT_CHAR)
             data = data_stream[:ind]
@@ -76,7 +84,8 @@ def receiver(conn, conn_mgr):
                 if callable(new_message_callback):
                     forward_callback(sender_id, receiver_id, msg, msg_type)
 
-    # disconnect_callback(connected_id)
+    if callable(disconnect_callback):
+        disconnect_callback(connected_id)
 
 
 def msg_sender(conn_mgr):
