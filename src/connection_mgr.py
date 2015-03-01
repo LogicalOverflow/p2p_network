@@ -9,7 +9,8 @@ class ConnectionMgr():
     BROADCAST_ID = bytes(1)
     MSG_TYPES = {'string': bytes([1]),
                  'json_string': bytes([2]),
-                 'new_buddy': bytes([3])}
+                 'new_buddy': bytes([3]),
+                 'file': bytes([4])}
 
     def __init__(self, sock, client_id):
         self.HOST = True
@@ -17,7 +18,6 @@ class ConnectionMgr():
         self.SOCK = sock
         self.MANAGER = mp.Manager()
         self.CLIENT_ID = client_id
-        self.MSG_Q = self.MANAGER.Queue()
         self.SEND_Q = self.MANAGER.Queue()
         self.CONNECTION_Q = self.MANAGER.Queue()
         self.CALLBACKS = {'connect': lambda *args: None,
@@ -51,30 +51,6 @@ class ConnectionMgr():
             connected_id += conn.recv(1)
 
         connected_id = bytes(connected_id)
-
-        # TODO MAKE PARTNER LIST WORKING
-        '''
-        partners = bytearray(0)
-        for partner in self.CONNECTION_PARTNERS:
-            partners += partner
-            partners = bytes(partners + self.SPLIT_CHAR)
-        conn.send(partners)
-        del partners
-
-        connected_partners = []
-        data_stream = bytearray(0)
-        while True:
-            data_stream += bytes(conn.recv(1))
-            if self.SPLIT_CHAR in data_stream:
-                break
-        partner_list = data_stream[:data_stream.index(self.SPLIT_CHAR)]
-        data_stream = data_stream[data_stream.index(self.SPLIT_CHAR) + 1:]
-        while len(partner_list) > client_id_len:
-            connected_partners.append(partner_list[:client_id_len])
-            partner_list = partner_list[client_id_len:]
-
-        print('GOT DEM PARTNERS!')
-        '''
 
         self.CONNECTION_Q.put((connected_id, conn))
         self.connection_internal_callback(connected_id, 'BAUM')  # partners)
@@ -112,13 +88,7 @@ class ConnectionMgr():
                 data_stream = data_stream[msg_len:]
 
                 if receiver_id == self.CLIENT_ID or receiver_id == self.BROADCAST_ID:
-                    if msg_type == self.MSG_TYPES['new_buddy']:
-                        # connected_partners.append(msg)
-                        # self.CONNECTION_PARTNERS[connected_id].append(msg)
-                        pass
-                    else:
-                        self.MSG_Q.put((sender_id, msg, msg_type))
-                        self.new_message_internal_callback(sender_id, msg, msg_type)
+                    self.new_message_internal_callback(sender_id, msg, msg_type)
                 if receiver_id != self.CLIENT_ID:
                     self.SEND_Q.put((msg_type, msg, sender_id, receiver_id))
                     self.forward_internal_callback(sender_id, receiver_id, msg, msg_type)
@@ -167,11 +137,13 @@ class ConnectionMgr():
 
     def connection_internal_callback(self, connected_id, connected_partners):
         self.CONNECTION_PARTNERS[connected_id] = connected_partners
-        for receiver_id in self.CONNECTION_PARTNERS:
-            self.MSG_Q.put((self.MSG_TYPES['new_buddy'], connected_id, self.CLIENT_ID, receiver_id))
         return self.CALLBACKS['connect'](connected_id, connected_partners)
 
     def new_message_internal_callback(self, sender_id, msg, msg_type):
+        for type_name, type_id in self.MSG_TYPES.items():
+            if type_id == msg_type:
+                msg_type = type_name
+                break
         return self.CALLBACKS['message'](sender_id, msg, msg_type)
 
     def forward_internal_callback(self, sender_id, receiver_id, msg, msg_type):
