@@ -92,13 +92,24 @@ class ConnectionMgr():
                 break
             if self.SPLIT_CHAR in data_stream:
                 ind = data_stream.index(self.SPLIT_CHAR)
-                data = data_stream[:ind]
+                header = bytes(data_stream[:ind])
 
-                data_stream = data_stream[ind + 1:]
-                msg_type = bytes(data[:1])
-                msg = bytes(data[1:-2 * client_id_len])
-                sender_id = bytes(data[-2 * client_id_len:-client_id_len])
-                receiver_id = bytes(data[-client_id_len:])
+                data_stream = data_stream[ind + len(self.SPLIT_CHAR):]
+                msg_type = bytes(header[:1])
+                sender_id = bytes(header[1:client_id_len + 1])
+                receiver_id = bytes(header[client_id_len + 1:2 * client_id_len + 1])
+                msg_len_list = bytes(header[2 * client_id_len + 1:])
+                msg_len = 0
+
+                for byte in msg_len_list:
+                    msg_len *= 255
+                    msg_len += byte
+
+                while len(data_stream) < msg_len:
+                    data_stream += conn.recv(self.BUFFER_SIZE)
+
+                msg = data_stream[:msg_len]
+                data_stream = data_stream[msg_len:]
 
                 if receiver_id == self.CLIENT_ID or receiver_id == self.BROADCAST_ID:
                     if msg_type == self.MSG_TYPES['new_buddy']:
@@ -117,7 +128,6 @@ class ConnectionMgr():
     def msg_sender(self):
         send_q = self.SEND_Q
         connection_q = self.CONNECTION_Q
-        split_char = self.SPLIT_CHAR
 
         def send(sock, send_msg):
             total_sent = 0
@@ -133,7 +143,13 @@ class ConnectionMgr():
                 connections[conn_id] = conn
             if not send_q.empty():
                 msg_type, msg, sender_id, receiver_id = send_q.get()
-                to_send = bytes(msg_type + msg + sender_id + receiver_id + split_char)
+                msg_len = len(msg)
+                msg_len_list = []
+                while msg_len > 0:
+                    msg_len_list.insert(0, msg_len % 255)
+                    msg_len //= 255
+                header = bytes(msg_type + sender_id + receiver_id + bytes(msg_len_list) + self.SPLIT_CHAR)
+                to_send = bytes(header + msg)
                 if to_send in send_msgs:
                     continue
                 elif receiver_id in connections:
