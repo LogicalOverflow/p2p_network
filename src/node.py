@@ -1,8 +1,8 @@
 import socket
-import multiprocessing as mp
+import threading
 
-from connection_mgr import ConnectionMgr
 from time import sleep
+from connection_mgr import ConnectionMgr
 
 
 class Node():
@@ -12,13 +12,8 @@ class Node():
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(node_address)
 
-        self.msg_q = mp.Queue()
-        self.conn_mgr = ConnectionMgr(s, client_id, self.msg_q)
-
-        # self.conn_mgr.new_message_callback = self.new_message_callback
-        # self.conn_mgr.forward_callback = self.forward_callback
-        # self.conn_mgr.sending_callback = self.forward_callback
-        # self.conn_mgr.disconnect_callback = self.disconnect_callback
+        self.conn_mgr = ConnectionMgr(s, client_id)
+        self.msg_q = self.conn_mgr.MSG_Q
 
     def connect_to_node(self, partner_ip, partner_port):
         if not isinstance(partner_port, int):
@@ -30,24 +25,20 @@ class Node():
 
         return self.conn_mgr.connect((partner_ip, partner_port))
 
-    def new_message_callback(self, sender_id, msg, msg_type):
-        print('<', sender_id, ':', msg)
-        pass
-
-    def forward_callback(self, sender_id, receiver_id, msg, msg_type):
-        pass
-
-    def sending_callback(self, receiver_id, msg, msg_type):
-        print('> SENDING \'{0}\' at'.format(msg), receiver_id)
-
-    def disconnect_callback(self, sending_internal_callback):
-        pass
-
     def send_msg(self, receiver_id, byte_msg):
         self.conn_mgr.send_msg(receiver_id, byte_msg)
 
     def send_broadcast(self, broadcast):
-        self.conn_mgr.send_msg(bytes(1), broadcast)
+        # self.conn_mgr.send_msg(self.conn_mgr.BROADCAST_ID, broadcast)
+        pass
+
+
+def new_message_callback(sender_id, msg, msg_type):
+    print('< RECEIVED \'{0}\' from'.format(msg.decode('utf-8')), sender_id)
+
+
+def sending_callback(receiver_id, msg, msg_type):
+    print('> SENDING  \'{0}\' at  '.format(msg.decode('utf-8')), receiver_id)
 
 
 def q_cleaner(q):
@@ -72,8 +63,11 @@ if __name__ == '__main__':
     node = Node(CLIENT_IP, CLIENT_PORT, CLIENT_ID)
     node.connect_to_node(PARTNER_IP, PARTNER_PORT)
 
-    q_cleaner_process = mp.Process(target=q_cleaner, args=(node.msg_q, ))
-    q_cleaner_process.start()
+    node.conn_mgr.CALLBACKS['message'] = new_message_callback
+    node.conn_mgr.CALLBACKS['sending'] = sending_callback
+
+    q_cleaner_thread = threading.Thread(target=q_cleaner, args=(node.msg_q, ))
+    q_cleaner_thread.start()
 
     sleep(1)
 
@@ -82,5 +76,7 @@ if __name__ == '__main__':
         send_data = input()
         target_id = bytes([int(send_data[0])])
         msg_str = send_data[2:]
-        node.send_msg(target_id, msg_str.encode('utf-8'))
-        print(node.conn_mgr.CONNECTION_PARTNERS)
+        if target_id == 0:
+            node.send_broadcast(msg_str.encode('utf-8'))
+        else:
+            node.send_msg(target_id, msg_str.encode('utf-8'))
