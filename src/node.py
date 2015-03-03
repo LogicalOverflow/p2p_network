@@ -26,10 +26,10 @@ class Node():
     def send_msg(self, receiver_id, byte_msg, msg_type='string'):
         self.conn_mgr.send_msg(receiver_id, byte_msg, msg_type)
 
-    def send_broadcast(self, broadcast):
+    def send_broadcast(self, broadcast, msg_type='string'):
         # self.conn_mgr.send_msg(self.conn_mgr.BROADCAST_ID, broadcast) TODO MAKE BROADCASTS WORK
+        self.conn_mgr.send_broadcast(broadcast, msg_type)
         pass
-
 
 def new_message_callback(sender_id, msg, msg_type):
     if msg_type == 'string':
@@ -50,7 +50,6 @@ def sending_callback(receiver_id, msg, msg_type):
 if __name__ == '__main__':
     client_id_number = int(input('CLIENT  ID  : ') or '1')
     CLIENT_ID = bytes([client_id_number])
-    print(CLIENT_ID)
     CLIENT_PORT = 13370 + client_id_number
     print(CLIENT_PORT)
     PARTNER_PORT = 13370 + int(input('PARTNER ID  : ') or '1')
@@ -67,12 +66,15 @@ if __name__ == '__main__':
     node.conn_mgr.CALLBACKS['message'] = new_message_callback
     node.conn_mgr.CALLBACKS['sending'] = sending_callback
 
-    sleep(1)
+    sleep(0.25)
 
     print('UP AND RUNNING')
     while True:
         send_data = input()
-        target_id = bytes([int(send_data[0])])
+        if send_data[0].upper() == 'B':
+            target_id = node.conn_mgr.BROADCAST_ID
+        else:
+            target_id = bytes([int(send_data[0])])
         msg_str = send_data[2:]
         if msg_str[:4].upper() == 'FILE':
             path = msg_str[5:]
@@ -80,7 +82,7 @@ if __name__ == '__main__':
                 file_data = f.read()
             node.send_msg(target_id, file_data, 'file')
         else:
-            if target_id == 0:
+            if target_id == node.conn_mgr.BROADCAST_ID:
                 node.send_broadcast(msg_str.encode('utf-8'))
             else:
                 node.send_msg(target_id, msg_str.encode('utf-8'))
