@@ -6,3 +6,6 @@ What is curently possible:
 - broadcasting data to everyone in the network
 
 sendable data is anything - you are sending bytes
+
+installation throght setup.py
+packet name is p2p_network
