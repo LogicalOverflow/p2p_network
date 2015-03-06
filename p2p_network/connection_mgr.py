@@ -4,8 +4,14 @@ import multiprocessing as mp
 
 from p2p_network.utils.connection_map import ConnectionMap
 
-
 def bytes_to_int(bytes_array):
+    """
+    Converts byte array to integer
+
+    :param list bytes_array: The byte array
+    :return: the byte array as integer
+    :rtype: int
+    """
     int_value = 0
     for byte in bytes_array:
         int_value *= 255
@@ -15,6 +21,13 @@ def bytes_to_int(bytes_array):
 
 
 class ConnectionMgr:
+    """
+    ConnectionManager Class to handle a connection
+
+    :param socket sock: A socket for TCP connection
+    :param int client_id: The client id that the connection manager should use
+    :cvar dict MSG_TYPES: Message types for message sending
+    """
     SPLIT_CHAR = bytes(2)
     BUFFER_SIZE = 32
     BROADCAST_ID = bytes(1)
@@ -212,6 +225,11 @@ class ConnectionMgr:
     # 'normal' methods
 
     def connect(self, target_address):
+        """
+        Connect to the specified address
+
+        :param  tupel target_address: The address to connect to
+        """
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         conn.connect(target_address)
         receiver_thread = threading.Thread(target=self.receiver, args=(conn, ))
@@ -219,7 +237,19 @@ class ConnectionMgr:
         return True
 
     def send_broadcast(self, msg, msg_type='string'):
+        """
+        Send a broadcast to all connected nodes
+
+        :param msg: Data to send
+        :param msg_type: Type of the data. See :class:`p2p_network.connection_mgr.ConnectionMgr` 
+        """
         self.send_msg(self.BROADCAST_ID, msg, msg_type)
 
     def send_msg(self, receiver_id, msg, msg_type='string'):
+        """
+        Send a broadcast to all connected nodes
+
+        :param msg: Data to send
+        :param msg_type: Type of the data. See :class:`p2p_network.connection_mgr.ConnectionMgr` 
+        """
         self.SEND_Q.put((self.MSG_TYPES[msg_type], msg, self.CLIENT_ID, receiver_id))
