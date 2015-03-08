@@ -8,8 +8,8 @@
     
     <title>Welcome to P2P Network’s documentation! &mdash; P2P Network 0.1.0 documentation</title>
     
-    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
-    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    <link rel="stylesheet" href="static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="static/pygments.css" type="text/css" />
     
     <script type="text/javascript">
       var DOCUMENTATION_OPTIONS = {
@@ -20,9 +20,9 @@
         HAS_SOURCE:  true
       };
     </script>
-    <script type="text/javascript" src="_static/jquery.js"></script>
-    <script type="text/javascript" src="_static/underscore.js"></script>
-    <script type="text/javascript" src="_static/doctools.js"></script>
+    <script type="text/javascript" src="static/jquery.js"></script>
+    <script type="text/javascript" src="static/underscore.js"></script>
+    <script type="text/javascript" src="static/doctools.js"></script>
     <link rel="top" title="P2P Network 0.1.0 documentation" href="#" />
    
   
@@ -58,7 +58,7 @@
 </div>
 <span class="target" id="module-p2p_network.connection_mgr"></span><dl class="class">
 <dt id="p2p_network.connection_mgr.ConnectionMgr">
-<em class="property">class </em><code class="descclassname">p2p_network.connection_mgr.</code><code class="descname">ConnectionMgr</code><span class="sig-paren">(</span><em>sock</em>, <em>client_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">p2p_network.connection_mgr.</code><code class="descname">ConnectionMgr</code><span class="sig-paren">(</span><em>sock</em>, <em>client_id</em><span class="sig-paren">)</span><a class="reference internal" href="modules/p2p_network/connection_mgr.html#ConnectionMgr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr" title="Permalink to this definition">¶</a></dt>
 <dd><p>ConnectionManager Class to handle a connection</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -77,7 +77,7 @@
 </table>
 <dl class="method">
 <dt id="p2p_network.connection_mgr.ConnectionMgr.connect">
-<code class="descname">connect</code><span class="sig-paren">(</span><em>target_address</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.connect" title="Permalink to this definition">¶</a></dt>
+<code class="descname">connect</code><span class="sig-paren">(</span><em>target_address</em><span class="sig-paren">)</span><a class="reference internal" href="modules/p2p_network/connection_mgr.html#ConnectionMgr.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.connect" title="Permalink to this definition">¶</a></dt>
 <dd><p>Connect to the specified address</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -91,7 +91,7 @@
 
 <dl class="method">
 <dt id="p2p_network.connection_mgr.ConnectionMgr.send_broadcast">
-<code class="descname">send_broadcast</code><span class="sig-paren">(</span><em>msg</em>, <em>msg_type='string'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr.send_broadcast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.send_broadcast" title="Permalink to this definition">¶</a></dt>
+<code class="descname">send_broadcast</code><span class="sig-paren">(</span><em>msg</em>, <em>msg_type='string'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/p2p_network/connection_mgr.html#ConnectionMgr.send_broadcast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.send_broadcast" title="Permalink to this definition">¶</a></dt>
 <dd><p>Send a broadcast to all connected nodes</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -109,7 +109,7 @@
 
 <dl class="method">
 <dt id="p2p_network.connection_mgr.ConnectionMgr.send_msg">
-<code class="descname">send_msg</code><span class="sig-paren">(</span><em>receiver_id</em>, <em>msg</em>, <em>msg_type='string'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.send_msg" title="Permalink to this definition">¶</a></dt>
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>receiver_id</em>, <em>msg</em>, <em>msg_type='string'</em><span class="sig-paren">)</span><a class="reference internal" href="modules/p2p_network/connection_mgr.html#ConnectionMgr.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.send_msg" title="Permalink to this definition">¶</a></dt>
 <dd><p>Send a broadcast to all connected nodes</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -129,7 +129,7 @@
 
 <dl class="function">
 <dt id="p2p_network.connection_mgr.bytes_to_int">
-<code class="descclassname">p2p_network.connection_mgr.</code><code class="descname">bytes_to_int</code><span class="sig-paren">(</span><em>bytes_array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#bytes_to_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.bytes_to_int" title="Permalink to this definition">¶</a></dt>
+<code class="descclassname">p2p_network.connection_mgr.</code><code class="descname">bytes_to_int</code><span class="sig-paren">(</span><em>bytes_array</em><span class="sig-paren">)</span><a class="reference internal" href="modules/p2p_network/connection_mgr.html#bytes_to_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.bytes_to_int" title="Permalink to this definition">¶</a></dt>
 <dd><p>Converts byte array to integer</p>
 <table class="docutils field-list" frame="void" rules="none">
 <col class="field-name" />
@@ -147,7 +147,7 @@
 
 <span class="target" id="module-p2p_network.node"></span><span class="target" id="module-p2p_network.utils.connection_map"></span><dl class="class">
 <dt id="p2p_network.utils.connection_map.ConnectionMap">
-<em class="property">class </em><code class="descclassname">p2p_network.utils.connection_map.</code><code class="descname">ConnectionMap</code><span class="sig-paren">(</span><em>nodes=None</em>, <em>connections=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/utils/connection_map.html#ConnectionMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.utils.connection_map.ConnectionMap" title="Permalink to this definition">¶</a></dt>
+<em class="property">class </em><code class="descclassname">p2p_network.utils.connection_map.</code><code class="descname">ConnectionMap</code><span class="sig-paren">(</span><em>nodes=None</em>, <em>connections=None</em><span class="sig-paren">)</span><a class="reference internal" href="modules/p2p_network/utils/connection_map.html#ConnectionMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.utils.connection_map.ConnectionMap" title="Permalink to this definition">¶</a></dt>
 <dd><p>class to manage list of all connection in a network
 adding to maps returns a new map, containing all connections in at least on of the two maps
 subtracting two maps returns a list of all connections in one of the maps but not in the others
@@ -183,7 +183,7 @@ nodes returned and accepted are bytes or bytearrays</p>
   <div role="note" aria-label="source link">
     <h3>This Page</h3>
     <ul class="this-page-menu">
-      <li><a href="_sources/index.txt"
+      <li><a href="sources/index.txt"
             rel="nofollow">Show Source</a></li>
     </ul>
    </div>
@@ -212,7 +212,7 @@ nodes returned and accepted are bytes or bytearrays</p>
       &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.1</a>
       
       |
-      <a href="_sources/index.txt"
+      <a href="sources/index.txt"
           rel="nofollow">Page source</a></li>
     </div>
 
