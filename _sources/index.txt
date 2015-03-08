@@ -1,0 +1,29 @@
+.. P2P Network documentation master file, created by
+   sphinx-quickstart on Wed Mar  4 20:54:56 2015.
+   You can adapt this file completely to your liking, but it should at least
+   contain the root `toctree` directive.
+
+Welcome to P2P Network's documentation!
+=======================================
+
+Contents
+********
+
+.. toctree::
+   :maxdepth: 2
+.. automodule:: p2p_network.connection_mgr
+   :members:
+.. automodule:: p2p_network.node
+   :members:
+.. automodule:: p2p_network.utils.connection_map
+   :members:
+
+
+
+Indices and tables
+==================
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+

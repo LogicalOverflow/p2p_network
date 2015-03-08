@@ -1,0 +1,223 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>Welcome to P2P Network’s documentation! &mdash; P2P Network 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    './',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="_static/jquery.js"></script>
+    <script type="text/javascript" src="_static/underscore.js"></script>
+    <script type="text/javascript" src="_static/doctools.js"></script>
+    <link rel="top" title="P2P Network 0.1.0 documentation" href="#" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="#">P2P Network 0.1.0 documentation</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="welcome-to-p2p-network-s-documentation">
+<h1>Welcome to P2P Network&#8217;s documentation!<a class="headerlink" href="#welcome-to-p2p-network-s-documentation" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="contents">
+<h2>Contents<a class="headerlink" href="#contents" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul class="simple">
+</ul>
+</div>
+<span class="target" id="module-p2p_network.connection_mgr"></span><dl class="class">
+<dt id="p2p_network.connection_mgr.ConnectionMgr">
+<em class="property">class </em><code class="descclassname">p2p_network.connection_mgr.</code><code class="descname">ConnectionMgr</code><span class="sig-paren">(</span><em>sock</em>, <em>client_id</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr" title="Permalink to this definition">¶</a></dt>
+<dd><p>ConnectionManager Class to handle a connection</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>sock</strong> (<em>socket</em>) &#8211; A socket for TCP connection</li>
+<li><strong>client_id</strong> (<em>int</em>) &#8211; The client id that the connection manager should use</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Variables:</th><td class="field-body"><p class="first last"><strong>MSG_TYPES</strong> (<em>dict</em>) &#8211; Message types for message sending</p>
+</td>
+</tr>
+</tbody>
+</table>
+<dl class="method">
+<dt id="p2p_network.connection_mgr.ConnectionMgr.connect">
+<code class="descname">connect</code><span class="sig-paren">(</span><em>target_address</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr.connect"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to the specified address</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>target_address</strong> (<em>tupel</em>) &#8211; The address to connect to</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="p2p_network.connection_mgr.ConnectionMgr.send_broadcast">
+<code class="descname">send_broadcast</code><span class="sig-paren">(</span><em>msg</em>, <em>msg_type='string'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr.send_broadcast"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.send_broadcast" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a broadcast to all connected nodes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>msg</strong> &#8211; Data to send</li>
+<li><strong>msg_type</strong> &#8211; Type of the data. See <a class="reference internal" href="#p2p_network.connection_mgr.ConnectionMgr" title="p2p_network.connection_mgr.ConnectionMgr"><code class="xref py py-class docutils literal"><span class="pre">p2p_network.connection_mgr.ConnectionMgr</span></code></a></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="p2p_network.connection_mgr.ConnectionMgr.send_msg">
+<code class="descname">send_msg</code><span class="sig-paren">(</span><em>receiver_id</em>, <em>msg</em>, <em>msg_type='string'</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#ConnectionMgr.send_msg"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.ConnectionMgr.send_msg" title="Permalink to this definition">¶</a></dt>
+<dd><p>Send a broadcast to all connected nodes</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>msg</strong> &#8211; Data to send</li>
+<li><strong>msg_type</strong> &#8211; Type of the data. See <a class="reference internal" href="#p2p_network.connection_mgr.ConnectionMgr" title="p2p_network.connection_mgr.ConnectionMgr"><code class="xref py py-class docutils literal"><span class="pre">p2p_network.connection_mgr.ConnectionMgr</span></code></a></li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="function">
+<dt id="p2p_network.connection_mgr.bytes_to_int">
+<code class="descclassname">p2p_network.connection_mgr.</code><code class="descname">bytes_to_int</code><span class="sig-paren">(</span><em>bytes_array</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/connection_mgr.html#bytes_to_int"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.connection_mgr.bytes_to_int" title="Permalink to this definition">¶</a></dt>
+<dd><p>Converts byte array to integer</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>bytes_array</strong> (<em>list</em>) &#8211; The byte array</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body">the byte array as integer</td>
+</tr>
+<tr class="field-odd field"><th class="field-name">Return type:</th><td class="field-body">int</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<span class="target" id="module-p2p_network.node"></span><span class="target" id="module-p2p_network.utils.connection_map"></span><dl class="class">
+<dt id="p2p_network.utils.connection_map.ConnectionMap">
+<em class="property">class </em><code class="descclassname">p2p_network.utils.connection_map.</code><code class="descname">ConnectionMap</code><span class="sig-paren">(</span><em>nodes=None</em>, <em>connections=None</em><span class="sig-paren">)</span><a class="reference internal" href="_modules/p2p_network/utils/connection_map.html#ConnectionMap"><span class="viewcode-link">[source]</span></a><a class="headerlink" href="#p2p_network.utils.connection_map.ConnectionMap" title="Permalink to this definition">¶</a></dt>
+<dd><p>class to manage list of all connection in a network
+adding to maps returns a new map, containing all connections in at least on of the two maps
+subtracting two maps returns a list of all connections in one of the maps but not in the others
+nodes returned and accepted are bytes or bytearrays</p>
+</dd></dl>
+
+</div>
+</div>
+<div class="section" id="indices-and-tables">
+<h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
+<ul class="simple">
+<li><a class="reference internal" href="genindex.html"><em>Index</em></a></li>
+<li><a class="reference internal" href="py-modindex.html"><em>Module Index</em></a></li>
+<li><a class="reference internal" href="search.html"><em>Search Page</em></a></li>
+</ul>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="#">Table Of Contents</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">Welcome to P2P Network&#8217;s documentation!</a><ul>
+<li><a class="reference internal" href="#contents">Contents</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#indices-and-tables">Indices and tables</a></li>
+</ul>
+
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/index.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Leon Vack (Code), Sebastian Schmitt (Docs).
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3b3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.1</a>
+      
+      |
+      <a href="_sources/index.txt"
+          rel="nofollow">Page source</a></li>
+    </div>
+
+    
+
+    
+  </body>
+</html>

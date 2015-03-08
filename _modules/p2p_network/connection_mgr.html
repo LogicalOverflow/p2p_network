@@ -1,0 +1,346 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    
+    <title>p2p_network.connection_mgr &mdash; P2P Network 0.1.0 documentation</title>
+    
+    <link rel="stylesheet" href="../../_static/alabaster.css" type="text/css" />
+    <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+    
+    <script type="text/javascript">
+      var DOCUMENTATION_OPTIONS = {
+        URL_ROOT:    '../../',
+        VERSION:     '0.1.0',
+        COLLAPSE_INDEX: false,
+        FILE_SUFFIX: '.html',
+        HAS_SOURCE:  true
+      };
+    </script>
+    <script type="text/javascript" src="../../_static/jquery.js"></script>
+    <script type="text/javascript" src="../../_static/underscore.js"></script>
+    <script type="text/javascript" src="../../_static/doctools.js"></script>
+    <link rel="top" title="P2P Network 0.1.0 documentation" href="../../index.html" />
+    <link rel="up" title="Module code" href="../index.html" />
+   
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head>
+  <body role="document">
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../../genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="../../py-modindex.html" title="Python Module Index"
+             >modules</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../../index.html">P2P Network 0.1.0 documentation</a> &raquo;</li>
+          <li class="nav-item nav-item-1"><a href="../index.html" accesskey="U">Module code</a> &raquo;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <h1>Source code for p2p_network.connection_mgr</h1><div class="highlight"><pre>
+<span class="kn">import</span> <span class="nn">socket</span>
+<span class="kn">import</span> <span class="nn">threading</span>
+<span class="kn">import</span> <span class="nn">multiprocessing</span> <span class="kn">as</span> <span class="nn">mp</span>
+
+<span class="kn">from</span> <span class="nn">p2p_network.utils.connection_map</span> <span class="kn">import</span> <span class="n">ConnectionMap</span>
+
+<div class="viewcode-block" id="bytes_to_int"><a class="viewcode-back" href="../../index.html#p2p_network.connection_mgr.bytes_to_int">[docs]</a><span class="k">def</span> <span class="nf">bytes_to_int</span><span class="p">(</span><span class="n">bytes_array</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Converts byte array to integer</span>
+
+<span class="sd">    :param list bytes_array: The byte array</span>
+<span class="sd">    :return: the byte array as integer</span>
+<span class="sd">    :rtype: int</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">int_value</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="n">bytes_array</span><span class="p">:</span>
+        <span class="n">int_value</span> <span class="o">*=</span> <span class="mi">255</span>
+        <span class="n">int_value</span> <span class="o">+=</span> <span class="n">byte</span>
+
+    <span class="k">return</span> <span class="n">int_value</span>
+
+</div>
+<div class="viewcode-block" id="ConnectionMgr"><a class="viewcode-back" href="../../index.html#p2p_network.connection_mgr.ConnectionMgr">[docs]</a><span class="k">class</span> <span class="nc">ConnectionMgr</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    ConnectionManager Class to handle a connection</span>
+
+<span class="sd">    :param socket sock: A socket for TCP connection</span>
+<span class="sd">    :param int client_id: The client id that the connection manager should use</span>
+<span class="sd">    :cvar dict MSG_TYPES: Message types for message sending</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">SPLIT_CHAR</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+    <span class="n">BUFFER_SIZE</span> <span class="o">=</span> <span class="mi">32</span>
+    <span class="n">BROADCAST_ID</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">MSG_TYPES</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;string&#39;</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">([</span><span class="mi">1</span><span class="p">]),</span>
+                 <span class="s">&#39;file&#39;</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">([</span><span class="mi">2</span><span class="p">]),</span>
+                 <span class="s">&#39;json_string&#39;</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">([</span><span class="mi">3</span><span class="p">]),</span>
+                 <span class="s">&#39;new_connection&#39;</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">([</span><span class="mi">4</span><span class="p">]),</span>
+                 <span class="s">&#39;connection_map&#39;</span><span class="p">:</span> <span class="nb">bytes</span><span class="p">([</span><span class="mi">5</span><span class="p">])}</span>
+
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sock</span><span class="p">,</span> <span class="n">client_id</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SOCK</span> <span class="o">=</span> <span class="n">sock</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span> <span class="o">=</span> <span class="n">client_id</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span> <span class="o">=</span> <span class="n">ConnectionMap</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">RECEIVED_BROADCASTS</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">MANAGER</span> <span class="o">=</span> <span class="n">mp</span><span class="o">.</span><span class="n">Manager</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SEND_Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MANAGER</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_Q</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">MANAGER</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CALLBACKS</span> <span class="o">=</span> <span class="p">{</span><span class="s">&#39;connect&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                          <span class="s">&#39;message&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                          <span class="s">&#39;forward&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                          <span class="s">&#39;sending&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="bp">None</span><span class="p">,</span>
+                          <span class="s">&#39;disconnect&#39;</span><span class="p">:</span> <span class="k">lambda</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="bp">None</span><span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_PARTNERS</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">acceptor_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">acceptor</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">acceptor_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">sender_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">msg_sender</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">sender_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="c"># threaded methods</span>
+
+    <span class="k">def</span> <span class="nf">acceptor</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SOCK</span><span class="o">.</span><span class="n">listen</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SOCK</span><span class="o">.</span><span class="n">accept</span><span class="p">()[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">receiver_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">receiver</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">))</span>
+            <span class="n">receiver_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">receiver</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">conn</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">send_map</span><span class="p">(</span><span class="n">conn_map</span><span class="p">):</span>
+            <span class="n">map_str</span> <span class="o">=</span> <span class="n">conn_map</span><span class="o">.</span><span class="n">to_json_string</span><span class="p">()</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">SEND_Q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">MSG_TYPES</span><span class="p">[</span><span class="s">&#39;connection_map&#39;</span><span class="p">],</span> <span class="n">map_str</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">,</span> <span class="n">connected_id</span><span class="p">))</span>
+
+        <span class="n">client_id_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">)</span>
+        <span class="n">connected_id</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="n">conn</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">)</span>
+        <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">connected_id</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">client_id_len</span><span class="p">:</span>
+            <span class="n">connected_id</span> <span class="o">+=</span> <span class="n">conn</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="n">connected_id</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">connected_id</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_Q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">connected_id</span><span class="p">,</span> <span class="n">conn</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection_internal_callback</span><span class="p">(</span><span class="n">connected_id</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">)</span>
+
+        <span class="n">send_first</span> <span class="o">=</span> <span class="n">bytes_to_int</span><span class="p">(</span><span class="n">connected_id</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">bytes_to_int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">send_first</span><span class="p">:</span>
+            <span class="n">send_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="p">)</span>
+
+        <span class="n">data_stream</span> <span class="o">=</span> <span class="nb">bytearray</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">new_data</span> <span class="o">=</span> <span class="n">conn</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BUFFER_SIZE</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">new_data</span><span class="p">:</span>
+                    <span class="n">data_stream</span> <span class="o">+=</span> <span class="n">new_data</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">break</span>
+            <span class="k">except</span> <span class="n">socket</span><span class="o">.</span><span class="n">timeout</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPLIT_CHAR</span> <span class="ow">in</span> <span class="n">data_stream</span><span class="p">:</span>
+                <span class="n">ind</span> <span class="o">=</span> <span class="n">data_stream</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPLIT_CHAR</span><span class="p">)</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">data_stream</span><span class="p">[:</span><span class="n">ind</span><span class="p">])</span>
+
+                <span class="n">data_stream</span> <span class="o">=</span> <span class="n">data_stream</span><span class="p">[</span><span class="n">ind</span> <span class="o">+</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">SPLIT_CHAR</span><span class="p">):]</span>
+                <span class="n">msg_type</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">2</span><span class="p">:</span><span class="mi">3</span><span class="p">])</span>
+                <span class="n">sender_id</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">3</span><span class="p">:</span><span class="n">client_id_len</span> <span class="o">+</span> <span class="mi">3</span><span class="p">])</span>
+                <span class="n">receiver_id</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="n">client_id_len</span> <span class="o">+</span> <span class="mi">3</span><span class="p">:</span><span class="mi">2</span> <span class="o">*</span> <span class="n">client_id_len</span> <span class="o">+</span> <span class="mi">3</span><span class="p">])</span>
+                <span class="n">msg_len_list</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">header</span><span class="p">[</span><span class="mi">2</span> <span class="o">*</span> <span class="n">client_id_len</span> <span class="o">+</span> <span class="mi">3</span><span class="p">:])</span>
+                <span class="n">msg_len</span> <span class="o">=</span> <span class="mi">0</span>
+
+                <span class="k">for</span> <span class="n">byte</span> <span class="ow">in</span> <span class="n">msg_len_list</span><span class="p">:</span>
+                    <span class="n">msg_len</span> <span class="o">*=</span> <span class="mi">255</span>
+                    <span class="n">msg_len</span> <span class="o">+=</span> <span class="n">byte</span>
+
+                <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">data_stream</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">msg_len</span><span class="p">:</span>
+                    <span class="n">data_stream</span> <span class="o">+=</span> <span class="n">conn</span><span class="o">.</span><span class="n">recv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BUFFER_SIZE</span><span class="p">)</span>
+
+                <span class="n">msg</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">data_stream</span><span class="p">[:</span><span class="n">msg_len</span><span class="p">])</span>
+                <span class="n">data_stream</span> <span class="o">=</span> <span class="n">data_stream</span><span class="p">[</span><span class="n">msg_len</span><span class="p">:]</span>
+                <span class="n">packet</span> <span class="o">=</span> <span class="n">header</span> <span class="o">+</span> <span class="n">msg</span>
+
+                <span class="k">if</span> <span class="n">receiver_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span> <span class="ow">or</span> <span class="p">(</span>
+                        <span class="n">receiver_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">BROADCAST_ID</span> <span class="ow">and</span> <span class="n">packet</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">RECEIVED_BROADCASTS</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="n">receiver_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">BROADCAST_ID</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">RECEIVED_BROADCASTS</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">packet</span><span class="p">)</span>
+
+                    <span class="k">if</span> <span class="n">msg_type</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">MSG_TYPES</span><span class="p">[</span><span class="s">&#39;connection_map&#39;</span><span class="p">]:</span>
+                        <span class="n">other_map</span> <span class="o">=</span> <span class="n">ConnectionMap</span><span class="o">.</span><span class="n">conn_mgr_from_json</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s">&#39;utf-8&#39;</span><span class="p">))</span>
+
+                        <span class="k">for</span> <span class="n">connected_partners</span> <span class="ow">in</span> <span class="n">other_map</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="p">:</span>
+                            <span class="n">id_a</span> <span class="o">=</span> <span class="n">connected_partners</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                            <span class="n">id_b</span> <span class="o">=</span> <span class="n">connected_partners</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                            <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="n">id_a</span><span class="p">,</span> <span class="n">id_b</span><span class="p">)</span>
+                            <span class="k">if</span> <span class="n">send_first</span><span class="p">:</span>
+                                <span class="bp">self</span><span class="o">.</span><span class="n">connection_internal_callback</span><span class="p">(</span><span class="n">id_a</span><span class="p">,</span> <span class="n">id_b</span><span class="p">)</span>
+
+                        <span class="k">if</span> <span class="ow">not</span> <span class="n">send_first</span><span class="p">:</span>
+                            <span class="n">send_first</span> <span class="o">=</span> <span class="bp">True</span>
+                            <span class="n">send_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="p">)</span>
+
+                    <span class="k">elif</span> <span class="n">msg_type</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">MSG_TYPES</span><span class="p">[</span><span class="s">&#39;new_connection&#39;</span><span class="p">]:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="n">msg</span><span class="p">[:</span><span class="n">client_id_len</span><span class="p">],</span> <span class="n">msg</span><span class="p">[</span><span class="n">client_id_len</span><span class="p">:])</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">new_message_internal_callback</span><span class="p">(</span><span class="n">sender_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+
+                <span class="k">if</span> <span class="n">receiver_id</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">SEND_Q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="n">msg_type</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">))</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">forward_internal_callback</span><span class="p">(</span><span class="n">sender_id</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">disconnect_internal_callback</span><span class="p">(</span><span class="n">connected_id</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">msg_sender</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">send</span><span class="p">(</span><span class="n">sock</span><span class="p">,</span> <span class="n">send_msg</span><span class="p">):</span>
+            <span class="n">total_sent</span> <span class="o">=</span> <span class="mi">0</span>
+            <span class="k">while</span> <span class="n">total_sent</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">send_msg</span><span class="p">):</span>
+                <span class="n">sent</span> <span class="o">=</span> <span class="n">sock</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">send_msg</span><span class="p">[</span><span class="n">total_sent</span><span class="p">:])</span>
+                <span class="n">total_sent</span> <span class="o">+=</span> <span class="n">sent</span>
+
+        <span class="n">send_msgs</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">connections</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_Q</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+                <span class="n">conn_id</span><span class="p">,</span> <span class="n">conn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_Q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="n">connections</span><span class="p">[</span><span class="n">conn_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">conn</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEND_Q</span><span class="o">.</span><span class="n">empty</span><span class="p">():</span>
+                <span class="n">msg_type</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">receiver_id</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">SEND_Q</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="k">if</span> <span class="n">sender_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">sending_internal_callback</span><span class="p">(</span><span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+
+                <span class="n">msg_len</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+                <span class="n">msg_len_list</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">filler</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+
+                <span class="k">while</span> <span class="n">msg_len</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">msg_len_list</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">msg_len</span> <span class="o">%</span> <span class="mi">255</span><span class="p">)</span>
+                    <span class="n">msg_len</span> <span class="o">//=</span> <span class="mi">255</span>
+                <span class="n">header</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">filler</span> <span class="o">+</span> <span class="n">msg_type</span> <span class="o">+</span> <span class="n">sender_id</span> <span class="o">+</span> <span class="n">receiver_id</span> <span class="o">+</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">msg_len_list</span><span class="p">)</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">SPLIT_CHAR</span><span class="p">)</span>
+                <span class="n">to_send</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">header</span> <span class="o">+</span> <span class="n">msg</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">receiver_id</span> <span class="ow">in</span> <span class="n">connections</span><span class="p">:</span>
+                    <span class="n">send</span><span class="p">(</span><span class="n">connections</span><span class="p">[</span><span class="n">receiver_id</span><span class="p">],</span> <span class="n">to_send</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="n">receiver_id</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">BROADCAST_ID</span> <span class="ow">and</span> <span class="n">to_send</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">send_msgs</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">conn_id</span> <span class="ow">in</span> <span class="n">connections</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="n">conn_id</span> <span class="o">!=</span> <span class="n">sender_id</span><span class="p">:</span>
+                            <span class="n">send</span><span class="p">(</span><span class="n">connections</span><span class="p">[</span><span class="n">conn_id</span><span class="p">],</span> <span class="n">to_send</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">path</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="o">.</span><span class="n">get_connection</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">path</span><span class="p">:</span>
+                        <span class="n">send</span><span class="p">(</span><span class="n">connections</span><span class="p">[</span><span class="n">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]],</span> <span class="n">to_send</span><span class="p">)</span>
+
+                <span class="n">send_msgs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">to_send</span><span class="p">)</span>
+
+    <span class="c"># internal methods</span>
+
+    <span class="c"># callback methods</span>
+
+    <span class="k">def</span> <span class="nf">connection_internal_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">id_a</span><span class="p">,</span> <span class="n">id_b</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="n">id_a</span><span class="p">,</span> <span class="n">id_b</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_broadcast</span><span class="p">(</span><span class="n">id_a</span> <span class="o">+</span> <span class="n">id_b</span><span class="p">,</span> <span class="s">&#39;new_connection&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CALLBACKS</span><span class="p">[</span><span class="s">&#39;connect&#39;</span><span class="p">](</span><span class="n">id_a</span><span class="p">,</span> <span class="n">id_b</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">new_message_internal_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">type_name</span><span class="p">,</span> <span class="n">type_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">MSG_TYPES</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">type_id</span> <span class="o">==</span> <span class="n">msg_type</span><span class="p">:</span>
+                <span class="n">msg_type</span> <span class="o">=</span> <span class="n">type_name</span>
+                <span class="k">break</span>
+
+        <span class="k">if</span> <span class="n">msg_type</span> <span class="o">==</span> <span class="s">&#39;new_connection&#39;</span><span class="p">:</span>
+            <span class="n">id_a</span> <span class="o">=</span> <span class="n">msg</span><span class="p">[:</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">)]</span>
+            <span class="n">id_b</span> <span class="o">=</span> <span class="n">msg</span><span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">):]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">CONNECTION_MAP</span><span class="o">.</span><span class="n">add_connection</span><span class="p">(</span><span class="n">id_a</span><span class="p">,</span> <span class="n">id_b</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CALLBACKS</span><span class="p">[</span><span class="s">&#39;message&#39;</span><span class="p">](</span><span class="n">sender_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">forward_internal_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sender_id</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CALLBACKS</span><span class="p">[</span><span class="s">&#39;forward&#39;</span><span class="p">](</span><span class="n">sender_id</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">sending_internal_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CALLBACKS</span><span class="p">[</span><span class="s">&#39;sending&#39;</span><span class="p">](</span><span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">disconnect_internal_callback</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">disconnected_id</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">CALLBACKS</span><span class="p">[</span><span class="s">&#39;disconnect&#39;</span><span class="p">](</span><span class="n">disconnected_id</span><span class="p">)</span>
+
+    <span class="c"># &#39;normal&#39; methods</span>
+
+<div class="viewcode-block" id="ConnectionMgr.connect"><a class="viewcode-back" href="../../index.html#p2p_network.connection_mgr.ConnectionMgr.connect">[docs]</a>    <span class="k">def</span> <span class="nf">connect</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_address</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Connect to the specified address</span>
+
+<span class="sd">        :param  tupel target_address: The address to connect to</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">conn</span> <span class="o">=</span> <span class="n">socket</span><span class="o">.</span><span class="n">socket</span><span class="p">(</span><span class="n">socket</span><span class="o">.</span><span class="n">AF_INET</span><span class="p">,</span> <span class="n">socket</span><span class="o">.</span><span class="n">SOCK_STREAM</span><span class="p">)</span>
+        <span class="n">conn</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">target_address</span><span class="p">)</span>
+        <span class="n">receiver_thread</span> <span class="o">=</span> <span class="n">threading</span><span class="o">.</span><span class="n">Thread</span><span class="p">(</span><span class="n">target</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">receiver</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="n">conn</span><span class="p">,</span> <span class="p">))</span>
+        <span class="n">receiver_thread</span><span class="o">.</span><span class="n">start</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">True</span>
+</div>
+<div class="viewcode-block" id="ConnectionMgr.send_broadcast"><a class="viewcode-back" href="../../index.html#p2p_network.connection_mgr.ConnectionMgr.send_broadcast">[docs]</a>    <span class="k">def</span> <span class="nf">send_broadcast</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a broadcast to all connected nodes</span>
+
+<span class="sd">        :param msg: Data to send</span>
+<span class="sd">        :param msg_type: Type of the data. See :class:`p2p_network.connection_mgr.ConnectionMgr` </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">send_msg</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">BROADCAST_ID</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="p">)</span>
+</div>
+<div class="viewcode-block" id="ConnectionMgr.send_msg"><a class="viewcode-back" href="../../index.html#p2p_network.connection_mgr.ConnectionMgr.send_msg">[docs]</a>    <span class="k">def</span> <span class="nf">send_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">,</span> <span class="n">msg</span><span class="p">,</span> <span class="n">msg_type</span><span class="o">=</span><span class="s">&#39;string&#39;</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Send a broadcast to all connected nodes</span>
+
+<span class="sd">        :param msg: Data to send</span>
+<span class="sd">        :param msg_type: Type of the data. See :class:`p2p_network.connection_mgr.ConnectionMgr` </span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">SEND_Q</span><span class="o">.</span><span class="n">put</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">MSG_TYPES</span><span class="p">[</span><span class="n">msg_type</span><span class="p">],</span> <span class="n">msg</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">CLIENT_ID</span><span class="p">,</span> <span class="n">receiver_id</span><span class="p">))</span></div></div>
+</pre></div>
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+<div id="searchbox" style="display: none" role="search">
+  <h3>Quick search</h3>
+    <form class="search" action="../../search.html" method="get">
+      <input type="text" name="q" />
+      <input type="submit" value="Go" />
+      <input type="hidden" name="check_keywords" value="yes" />
+      <input type="hidden" name="area" value="default" />
+    </form>
+    <p class="searchtip" style="font-size: 90%">
+    Enter search terms or a module, class or function name.
+    </p>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2015, Leon Vack (Code), Sebastian Schmitt (Docs).
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 1.3b3</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.1</a>
+      
+    </div>
+
+    
+
+    
+  </body>
+</html>
