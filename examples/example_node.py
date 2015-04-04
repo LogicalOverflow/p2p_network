@@ -19,6 +19,8 @@ def sending_callback(receiver_id, msg, msg_type):
         print('> SENDING  FILE TO', receiver_id)
 
 
+# TODO make command input nicer
+
 if __name__ == '__main__':
     client_id_number = int(input('CLIENT  ID  : ') or '1')
     CLIENT_ID = bytes([client_id_number])
